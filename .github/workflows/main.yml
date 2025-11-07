@@ -1,85 +1,65 @@
-name: 🚀 Deploy Vue + NestJS to cPanel (Explicit FTPS on Port 21)
+name: 🚀 Deploy Tracklyco to cPanel
 
 on:
   push:
     branches:
-      - main  # or 'master'
+      - main  # or master if you use master
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 🧩 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      # ---------- FRONTEND BUILD ----------
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      # -----------------------
-      # FRONTEND (VUE)
-      # -----------------------
-      - name: Install dependencies (Frontend)
+      - name: 📦 Install and build frontend
         working-directory: ./frontend
-        run: npm ci --legacy-peer-deps
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      # -----------------------
-      # BACKEND (NESTJS)
-      # -----------------------
-      - name: Install dependencies (Backend)
+      # ---------- BACKEND INSTALL ----------
+      - name: 📦 Install backend dependencies
         working-directory: ./backend
-        run: npm ci --legacy-peer-deps
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
 
-      - name: Build backend
-        working-directory: ./backend
-        run: npm run build
-
-      # -----------------------
-      # DEPLOY FRONTEND
-      # -----------------------
-      - name: Deploy frontend to cPanel
+      # ---------- DEPLOY FRONTEND ----------
+      - name: 🚀 Deploy frontend (Vue) to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ftp.tracklyco.com
           username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          passive: true
-          security: loose
-          timeout: 60000
+          protocol: sftp
+          port: 22
           local-dir: ./frontend/dist/
           server-dir: /public_html/
-          exclude: |
-            **/.git*
-            **/.github*
-            **/node_modules/**
+          state-name: .ftp-deploy-frontend-state.json
 
-      # -----------------------
-      # DEPLOY BACKEND
-      # -----------------------
-      - name: Deploy backend to cPanel
+      # ---------- DEPLOY BACKEND ----------
+      - name: 🚀 Deploy backend (NestJS) to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ftp.tracklyco.com
           username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          passive: true
-          security: loose
-          timeout: 60000
+          protocol: sftp
+          port: 22
           local-dir: ./backend/
-          server-dir: /public_html/api/
+          server-dir: /public_html/backend/
           exclude: |
-            **/.git*
-            **/.github*
             **/node_modules/**
-            **/tests/**
-            **/*.log
+            **/.git/**
+            **/.github/**
+            **/.env
+          state-name: .ftp-deploy-backend-state.json
