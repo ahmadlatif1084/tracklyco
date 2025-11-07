@@ -1,5 +1,4 @@
-
-name: 🚀 Deploy Vue + NestJS to cPanel (Single Domain)
+name: 🚀 Deploy Vue + NestJS to cPanel (Explicit FTPS on Port 21)
 
 on:
   push:
@@ -24,7 +23,7 @@ jobs:
       # -----------------------
       - name: Install dependencies (Frontend)
         working-directory: ./frontend
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build frontend
         working-directory: ./frontend
@@ -35,7 +34,7 @@ jobs:
       # -----------------------
       - name: Install dependencies (Backend)
         working-directory: ./backend
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build backend
         working-directory: ./backend
@@ -47,28 +46,35 @@ jobs:
       - name: Deploy frontend to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ftp.tracklyco.com
+          username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           port: 21
+          passive: true
+          security: loose
+          timeout: 60000
           local-dir: ./frontend/dist/
           server-dir: /public_html/
           exclude: |
             **/.git*
             **/.github*
             **/node_modules/**
+
       # -----------------------
       # DEPLOY BACKEND
       # -----------------------
       - name: Deploy backend to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ftp.tracklyco.com
+          username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           port: 21
+          passive: true
+          security: loose
+          timeout: 60000
           local-dir: ./backend/
           server-dir: /public_html/api/
           exclude: |
