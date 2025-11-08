@@ -42,7 +42,7 @@ jobs:
             # ---------- Clone repo if missing ----------
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
               echo "🔹 Cloning repo..."
-              git clone -b main git@github.com:ahmadlatif1084/tracklyco.git $DEPLOY_DIR
+              git clone -b main https://${GH_TOKEN}@github.com/ahmadlatif1084/tracklyco.git $DEPLOY_DIR
             fi
 
             cd $DEPLOY_DIR
