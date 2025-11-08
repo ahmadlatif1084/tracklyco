@@ -48,7 +48,7 @@ jobs:
           server: ftp.tracklyco.com
           username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: sftp
+          protocol: ftp
           port: 22
           local-dir: ./frontend/dist/
           server-dir: /public_html/
@@ -61,7 +61,7 @@ jobs:
           server: ftp.tracklyco.com
           username: developer@tracklyco.com
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: sftp
+          protocol: ftp
           port: 22
           local-dir: ./backend/
           server-dir: /public_html/backend/
