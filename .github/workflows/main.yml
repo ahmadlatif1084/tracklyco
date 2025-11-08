@@ -10,64 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------- Checkout Code ----------
       - name: 🧩 Checkout code
         uses: actions/checkout@v4
 
-      # ---------- FRONTEND BUILD ----------
-      - name: ⚙️ Setup Node.js for frontend
+      # ---------- Setup Node.js ----------
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ./frontend/package-lock.json
 
-      - name: 📦 Install and build frontend
-        working-directory: ./frontend
-        run: |
-          npm install --legacy-peer-deps
-          npm run build
-
-      # ---------- BACKEND BUILD ----------
-      - name: ⚙️ Setup Node.js for backend
-        uses: actions/setup-node@v4
+      # ---------- DEPLOY VIA SSH ----------
+      - name: 🚀 Deploy to OnicHost via SSH
+        uses: appleboy/ssh-action@v0.1.9
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ./backend/package-lock.json
+          host: ${{ secrets.ONICHOST_HOST }}
+          username: ${{ secrets.ONICHOST_USER }}
+          key: ${{ secrets.ONICHOST_SSH_KEY }}
+          port: ${{ secrets.ONICHOST_PORT }}
+          script: |
+            echo "🔹 Navigate to deployment folder"
+            cd ${{ secrets.DEPLOY_PATH }}
 
-      - name: 📦 Install backend dependencies
-        working-directory: ./backend
-        run: |
-          npm install --legacy-peer-deps
-          npm run build
+            echo "🔹 Pull latest code"
+            git reset --hard
+            git pull origin main
 
-      # ---------- DEPLOY FRONTEND ----------
-      - name: 🚀 Deploy frontend (Vue) to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ftp.tracklyco.com
-          username: developer@tracklyco.com
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 22
-          local-dir: ./frontend/dist/
-          server-dir: /public_html/
-          state-name: .ftp-deploy-frontend-state.json
+            # ---------- Backend ----------
+            echo "🔹 Install backend dependencies"
+            cd backend
+            npm install --legacy-peer-deps
+            npm run build
 
-      # ---------- DEPLOY BACKEND ----------
-      - name: 🚀 Deploy backend (NestJS) to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ftp.tracklyco.com
-          username: developer@tracklyco.com
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 22
-          local-dir: ./backend/
-          server-dir: /public_html/backend/
-          exclude: |
-            **/node_modules/**
-            **/.git/**
-            **/.github/**
-            **/.env
-          state-name: .ftp-deploy-backend-state.json
+            echo "🔹 Start backend with PM2"
+            pm2 restart tracklyco-backend || pm2 start dist/main.js --name tracklyco-backend
+
+            # ---------- Frontend ----------
+            echo "🔹 Install frontend dependencies"
+            cd ../frontend
+            npm install --legacy-peer-deps
+            npm run build
+
+            echo "🔹 Copy frontend build to public_html"
+            cp -r dist/* ../
+
+            echo "✅ Deployment complete!"
