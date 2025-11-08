@@ -27,6 +27,7 @@ jobs:
           host: ${{ secrets.ONICHOST_HOST }}
           username: ${{ secrets.ONICHOST_USER }}
           key: ${{ secrets.ONICHOST_SSH_KEY }}
+          passphrase: ${{ secrets.ONICHOST_SSH_PASSPHRASE }}
           port: ${{ secrets.ONICHOST_PORT }}
           script: |
             echo "🔹 Navigate to deployment folder"
