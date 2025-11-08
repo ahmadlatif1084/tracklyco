@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 20
 
-      # ---------- DEPLOY VIA SSH ----------
+      # ---------- Deploy via SSH ----------
       - name: 🚀 Deploy to OnicHost via SSH
         uses: appleboy/ssh-action@v0.1.9
         with:
@@ -30,29 +30,46 @@ jobs:
           passphrase: ${{ secrets.ONICHOST_SSH_PASSPHRASE }}
           port: ${{ secrets.ONICHOST_PORT }}
           script: |
-            echo "🔹 Navigate to deployment folder"
-            cd ${{ secrets.DEPLOY_PATH }}
+            # Deployment folders
+            DEPLOY_DIR=/home/tracklyc/deploy
+            BACKEND_DIR=$DEPLOY_DIR/backend
+            FRONTEND_DIR=$DEPLOY_DIR/frontend
+            PUBLIC_HTML=/home/tracklyc/public_html
 
-            echo "🔹 Pull latest code"
+            echo "🔹 Create deployment folder if it doesn't exist"
+            mkdir -p $DEPLOY_DIR
+
+            # ---------- Clone repo if missing ----------
+            if [ ! -d "$DEPLOY_DIR/.git" ]; then
+              echo "🔹 Cloning repo..."
+              git clone -b main git@github.com:ahmadlatif1084/tracklyco.git $DEPLOY_DIR
+            fi
+
+            cd $DEPLOY_DIR
+            echo "🔹 Pull latest code..."
             git reset --hard
             git pull origin main
 
             # ---------- Backend ----------
-            echo "🔹 Install backend dependencies"
-            cd backend
+            echo "🔹 Installing backend dependencies..."
+            cd $BACKEND_DIR
             npm install --legacy-peer-deps
+            echo "🔹 Building backend..."
             npm run build
-
-            echo "🔹 Start backend with PM2"
-            pm2 restart tracklyco-backend || pm2 start dist/main.js --name tracklyco-backend
+            echo "🔹 Backend ready. Ensure Node.js app in cPanel points to dist/main.js"
 
             # ---------- Frontend ----------
-            echo "🔹 Install frontend dependencies"
-            cd ../frontend
+            echo "🔹 Installing frontend dependencies..."
+            cd $FRONTEND_DIR
             npm install --legacy-peer-deps
+            echo "🔹 Building frontend..."
             npm run build
 
-            echo "🔹 Copy frontend build to public_html"
-            cp -r dist/* ../
+            # ---------- Clean public_html ----------
+            echo "🔹 Cleaning public_html..."
+            rm -rf $PUBLIC_HTML/*
 
-            echo "✅ Deployment complete!"
+            echo "🔹 Copying new frontend build to public_html..."
+            cp -r dist/* $PUBLIC_HTML/
+
+            echo "✅ Deployment completed successfully!"
