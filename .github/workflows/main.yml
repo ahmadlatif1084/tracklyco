@@ -45,7 +45,7 @@ jobs:
             else
               echo "🔹 No existing repo found. Cloning fresh..."
               rm -rf $DEPLOY_DIR
-              git clone -b main https://ahmadlatif1084:${GH_TOKEN}@github.com/ahmadlatif1084/tracklyco.git $DEPLOY_DIR
+              git clone -b main https://x-access-token:${GITHUB_TOKEN}@github.com/ahmadlatif1084/tracklyco.git $DEPLOY_DIR
             fi
 
             # ---------- Backend ----------
