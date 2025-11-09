@@ -30,46 +30,57 @@ jobs:
           passphrase: ${{ secrets.ONICHOST_SSH_PASSPHRASE }}
           port: ${{ secrets.ONICHOST_PORT }}
           script: |
-            # Deployment folders
+            # === Define Directories ===
             DEPLOY_DIR=/home/tracklyc/deploy
             BACKEND_DIR=$DEPLOY_DIR/backend
             FRONTEND_DIR=$DEPLOY_DIR/frontend
             PUBLIC_HTML=/home/tracklyc/public_html
 
-            echo "🔹 Create deployment folder if it doesn't exist"
-            mkdir -p $DEPLOY_DIR
-
-            # ---------- Clone repo if missing ----------
-            if [ ! -d "$DEPLOY_DIR/.git" ]; then
-              echo "🔹 Cloning repo..."
-              git clone -b main https://${GH_TOKEN}@github.com/ahmadlatif1084/tracklyco.git $DEPLOY_DIR
+            echo "🔹 Preparing deployment folder..."
+            if [ -d "$DEPLOY_DIR/.git" ]; then
+              echo "🔹 Existing repo found. Pulling latest changes..."
+              cd $DEPLOY_DIR
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              echo "🔹 No existing repo found. Cloning fresh..."
+              rm -rf $DEPLOY_DIR
+              git clone -b main https://ahmadlatif1084:${GH_TOKEN}@github.com/ahmadlatif1084/tracklyco.git $DEPLOY_DIR
             fi
 
-            cd $DEPLOY_DIR
-            echo "🔹 Pull latest code..."
-            git reset --hard
-            git pull origin main
-
             # ---------- Backend ----------
-            echo "🔹 Installing backend dependencies..."
-            cd $BACKEND_DIR
-            npm install --legacy-peer-deps
-            echo "🔹 Building backend..."
-            npm run build
-            echo "🔹 Backend ready. Ensure Node.js app in cPanel points to dist/main.js"
+            if [ -d "$BACKEND_DIR" ]; then
+              echo "🔹 Installing backend dependencies..."
+              cd $BACKEND_DIR
+              npm install --legacy-peer-deps
+
+              echo "🔹 Building backend..."
+              npm run build
+              echo "✅ Backend built successfully."
+              echo "➡️ Ensure your cPanel Node.js app points to:"
+              echo "   $BACKEND_DIR/dist/main.js"
+            else
+              echo "⚠️ Backend directory not found!"
+            fi
 
             # ---------- Frontend ----------
-            echo "🔹 Installing frontend dependencies..."
-            cd $FRONTEND_DIR
-            npm install --legacy-peer-deps
-            echo "🔹 Building frontend..."
-            npm run build
+            if [ -d "$FRONTEND_DIR" ]; then
+              echo "🔹 Installing frontend dependencies..."
+              cd $FRONTEND_DIR
+              npm install --legacy-peer-deps
 
-            # ---------- Clean public_html ----------
-            echo "🔹 Cleaning public_html..."
-            rm -rf $PUBLIC_HTML/*
+              echo "🔹 Building frontend..."
+              npm run build
+              echo "✅ Frontend built successfully."
 
-            echo "🔹 Copying new frontend build to public_html..."
-            cp -r dist/* $PUBLIC_HTML/
+              echo "🔹 Cleaning public_html..."
+              rm -rf $PUBLIC_HTML/*
 
-            echo "✅ Deployment completed successfully!"
+              echo "🔹 Copying frontend build to public_html..."
+              cp -r dist/* $PUBLIC_HTML/
+              echo "✅ Frontend deployed successfully."
+            else
+              echo "⚠️ Frontend directory not found!"
+            fi
+
+            echo "🎉 Deployment completed successfully!"
